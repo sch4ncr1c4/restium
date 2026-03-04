@@ -117,7 +117,7 @@ export function renderOrderCategories(state) {
         const active = category === state.selectedCatalogCategory;
         const customColor = state.catalogCategoryColors?.[category];
         const hasCustomColor = Boolean(customColor) && customColor.toUpperCase() !== "#FFFFFF";
-        const base = "rounded-md border px-4 py-2 text-sm font-semibold transition";
+        const base = "rounded-md border px-5 py-2.5 text-base font-semibold transition";
         const style = hasCustomColor
           ? active
             ? "border-zinc-700 text-white ring-2 ring-zinc-400 ring-offset-1"
@@ -217,10 +217,6 @@ export function initOrderModal(state) {
           <div class="flex max-w-full flex-wrap items-center justify-center gap-2">
             <div id="orderCategoryChips" class="flex max-w-full flex-wrap items-center justify-center gap-2"></div>
           </div>
-          <div id="categoryManageActions" class="flex flex-wrap items-center justify-center gap-2">
-            <button id="openAddCategoryModal" type="button" class="rounded-md bg-emeraldbrand px-2 py-1 text-xs font-semibold text-white hover:bg-emerald-600">Agregar categoria</button>
-            <button id="removeCategoryButton" type="button" class="rounded-md bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-200">Eliminar categoria</button>
-          </div>
         </div>
         <button id="closeOrderModal" type="button" class="rounded-md bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-700">Cerrar</button>
       </div>
@@ -247,7 +243,16 @@ export function initOrderModal(state) {
         <section class="flex min-h-0 flex-col rounded-xl border border-zinc-200 bg-white p-3">
           <div class="mb-3 flex items-center justify-between gap-2">
             <h4 class="text-sm font-semibold">Carga de productos</h4>
-            <button id="toggleCatalogLockButton" type="button" class="rounded-md bg-zinc-100 px-2 py-1 text-xs font-semibold text-zinc-700">Bloquear productos</button>
+            <div class="flex items-center gap-2">
+              <button id="toggleCatalogLockButton" type="button" class="rounded-md bg-zinc-100 px-2 py-1 text-xs font-semibold text-zinc-700">Bloquear productos</button>
+              <div id="categoryManageActions" class="relative">
+                <button id="categoryMenuToggle" type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-300 bg-white text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100" aria-haspopup="true" aria-expanded="false" aria-label="Opciones de categoria">...</button>
+                <div id="categoryMenuPanel" class="absolute right-0 top-9 z-20 hidden min-w-[180px] rounded-md border border-zinc-200 bg-white p-1.5 shadow-xl">
+                  <button id="openAddCategoryModal" type="button" class="block w-full rounded-md px-2 py-1.5 text-left text-xs font-semibold text-emerald-700 hover:bg-emerald-50">Agregar categoria</button>
+                  <button id="removeCategoryButton" type="button" class="mt-1 block w-full rounded-md px-2 py-1.5 text-left text-xs font-semibold text-rose-700 hover:bg-rose-50">Eliminar categoria</button>
+                </div>
+              </div>
+            </div>
           </div>
           <div id="catalogBoard" class="relative min-h-0 flex-1 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 p-0"></div>
         </section>
@@ -638,7 +643,29 @@ export function initQuickCatalogModals(state) {
     toggleSimpleModal(addProductModal, true);
   });
   document.getElementById("openAddWaiterModal")?.addEventListener("click", () => toggleSimpleModal(addWaiterModal, true));
-  document.getElementById("openAddCategoryModal")?.addEventListener("click", () => toggleSimpleModal(addCategoryModal, true));
+  const categoryMenuToggle = document.getElementById("categoryMenuToggle");
+  const categoryMenuPanel = document.getElementById("categoryMenuPanel");
+  const closeCategoryMenu = () => {
+    if (!categoryMenuPanel || !categoryMenuToggle) return;
+    categoryMenuPanel.classList.add("hidden");
+    categoryMenuToggle.setAttribute("aria-expanded", "false");
+  };
+  categoryMenuToggle?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const open = categoryMenuPanel.classList.toggle("hidden");
+    categoryMenuToggle.setAttribute("aria-expanded", String(!open));
+  });
+  document.addEventListener("pointerdown", (event) => {
+    if (!categoryMenuPanel || !categoryMenuToggle) return;
+    if (categoryMenuPanel.classList.contains("hidden")) return;
+    if (categoryMenuPanel.contains(event.target) || categoryMenuToggle.contains(event.target)) return;
+    closeCategoryMenu();
+  });
+
+  document.getElementById("openAddCategoryModal")?.addEventListener("click", () => {
+    closeCategoryMenu();
+    toggleSimpleModal(addCategoryModal, true);
+  });
   document.getElementById("newProductSearch").addEventListener("input", renderProductSearchResults);
   document.getElementById("newProductSearchResults").addEventListener("click", (event) => {
     const row = event.target.closest("[data-search-product-id]");
@@ -664,6 +691,7 @@ export function initQuickCatalogModals(state) {
     renderCatalog(state);
   });
   document.getElementById("removeCategoryButton")?.addEventListener("click", () => {
+    closeCategoryMenu();
     if (state.categories.length <= 1) return;
     renderOrderCategories(state);
     toggleSimpleModal(deleteCategoryModal, true);
@@ -719,7 +747,10 @@ export function initQuickCatalogModals(state) {
     }
   });
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") hideCatalogBoardMenu();
+    if (event.key === "Escape") {
+      hideCatalogBoardMenu();
+      closeCategoryMenu();
+    }
   });
 
   document.getElementById("saveNewProduct").addEventListener("click", () => {
