@@ -11,7 +11,13 @@ import {
 export function initOrdersEvents(state) {
   document.getElementById("orderWaiterSelect").addEventListener("change", (event) => {
     if (!state.currentOrderKey) return;
-    state.metaByTable[state.currentOrderKey].waiterName = event.target.value;
+    const pickedWaiter = String(event.target.value || "");
+    if (!state.waiters.includes(pickedWaiter)) {
+      state.metaByTable[state.currentOrderKey].waiterName = state.waiters[0] || "Terminal";
+      renderOrderModal(state);
+      return;
+    }
+    state.metaByTable[state.currentOrderKey].waiterName = pickedWaiter;
   });
 
   document.getElementById("toggleCatalogLockButton").addEventListener("click", () => {

@@ -25,7 +25,7 @@ function getActiveCategory(state) {
 
 function getCategoryLayout(state, category) {
   if (!state.catalogLayoutByCategory[category]) {
-    state.catalogLayoutByCategory[category] = {};
+    state.catalogLayoutByCategory[category] = Object.create(null);
   }
   return state.catalogLayoutByCategory[category];
 }

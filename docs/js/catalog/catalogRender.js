@@ -1,5 +1,6 @@
-﻿import { CATALOG_GAP, CATALOG_TILE_SIZE } from "../config.js";
+import { CATALOG_GAP, CATALOG_TILE_SIZE } from "../config.js";
 import { clamp } from "../utils/math.js";
+import { escapeHtml, normalizeHexColor } from "../utils/dom.js";
 
 function getBoardSize(board) {
   const rect = board.getBoundingClientRect();
@@ -33,14 +34,14 @@ function getActiveCategory(state) {
 
 function getCategoryLayout(state, category) {
   if (!state.catalogLayoutByCategory[category]) {
-    state.catalogLayoutByCategory[category] = {};
+    state.catalogLayoutByCategory[category] = Object.create(null);
   }
   return state.catalogLayoutByCategory[category];
 }
 
 function getCategoryHiddenMap(state, category) {
   if (!state.catalogHiddenByCategory[category]) {
-    state.catalogHiddenByCategory[category] = {};
+    state.catalogHiddenByCategory[category] = Object.create(null);
   }
   return state.catalogHiddenByCategory[category];
 }
@@ -102,10 +103,10 @@ export function renderCatalog(state) {
         .map((product) => {
           const pos = layout[product.id];
           const dragClass = state.catalogLocked ? "cursor-default" : "cursor-grab";
-          const tileColor = state.catalogProductColors[product.id] || "#FFFFFF";
-          const isPainted = tileColor.toUpperCase() !== "#FFFFFF";
+          const tileColor = normalizeHexColor(state.catalogProductColors[product.id], "#FFFFFF");
+          const isPainted = tileColor !== "#FFFFFF";
           const textClass = isPainted ? "text-white" : "text-zinc-700";
-          return `<button data-product-id="${product.id}" type="button" class="absolute rounded-lg border border-zinc-300 px-1 text-center text-[10px] font-semibold ${textClass} hover:border-emeraldbrand ${dragClass}" style="touch-action:none;background-color:${tileColor};width:${CATALOG_TILE_SIZE}px;height:${CATALOG_TILE_SIZE}px;left:${colPositions[pos.col]}px;top:${rowPositions[pos.row]}px"><span class="line-clamp-2 block">${product.name}</span></button>`;
+          return `<button data-product-id="${escapeHtml(product.id)}" type="button" class="absolute rounded-lg border border-zinc-300 px-1 text-center text-[10px] font-semibold ${textClass} hover:border-emeraldbrand ${dragClass}" style="touch-action:none;background-color:${tileColor};width:${CATALOG_TILE_SIZE}px;height:${CATALOG_TILE_SIZE}px;left:${colPositions[pos.col]}px;top:${rowPositions[pos.row]}px"><span class="line-clamp-2 block">${escapeHtml(product.name)}</span></button>`;
         })
         .join("")}
     </div>

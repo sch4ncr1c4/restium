@@ -1,6 +1,7 @@
-﻿import { money } from "../utils/format.js";
+import { money } from "../utils/format.js";
 import { calcTotals } from "./ordersCalc.js";
 import { syncTableOccupiedState } from "../plans/planGrid.js";
+import { escapeHtml, escapeCssAttrValue } from "../utils/dom.js";
 
 export function ensureOrderMeta(state, key) {
   if (!state.metaByTable[key]) {
@@ -14,7 +15,7 @@ export function ensureOrderMeta(state, key) {
 
 export function renderWaiters(state) {
   const waiterSelect = document.getElementById("orderWaiterSelect");
-  waiterSelect.innerHTML = state.waiters.map((w) => `<option value="${w}">${w}</option>`).join("");
+  waiterSelect.innerHTML = state.waiters.map((w) => `<option value="${escapeHtml(w)}">${escapeHtml(w)}</option>`).join("");
 }
 
 export function renderOrderModal(state) {
@@ -34,21 +35,23 @@ export function renderOrderModal(state) {
       const itemKey = item.lineId || item.id;
       const selected = state.selectedOrderProductId === itemKey;
       const deleted = Boolean(item.deleted);
-      return `<article data-order-item="${itemKey}" class="cursor-pointer rounded-lg border p-2 ${selected ? "border-emeraldbrand bg-emerald-50" : "border-zinc-200 bg-white"} ${deleted ? "opacity-75" : ""}">
+      const safeItemKey = escapeHtml(itemKey);
+      const qty = Math.max(0, Math.trunc(Number(item.qty) || 0));
+      return `<article data-order-item="${safeItemKey}" class="cursor-pointer rounded-lg border p-2 ${selected ? "border-emeraldbrand bg-emerald-50" : "border-zinc-200 bg-white"} ${deleted ? "opacity-75" : ""}">
         <div class="flex items-start justify-between gap-2">
           <div>
-            <p class="text-sm font-semibold">${item.name}</p>
+            <p class="text-sm font-semibold">${escapeHtml(item.name)}</p>
             <p class="text-xs text-zinc-500">Unitario: ${money.format(item.price)}</p>
-            <p class="text-xs text-zinc-500">Total: ${money.format(item.price * item.qty)}</p>
+            <p class="text-xs text-zinc-500">Total: ${money.format(item.price * qty)}</p>
             ${deleted ? '<p class="text-xs font-semibold text-rose-600">Eliminado</p>' : ""}
           </div>
           ${
             deleted
               ? '<div class="rounded bg-rose-100 px-2 py-1 text-[10px] font-semibold text-rose-700">Borrado</div>'
               : `<div class="flex items-center gap-1">
-                  <button data-qty-minus="${itemKey}" type="button" class="h-6 w-6 rounded bg-zinc-200 text-xs font-bold text-zinc-700">-</button>
-                  <span class="w-7 text-center text-xs font-semibold">x${item.qty}</span>
-                  <button data-qty-plus="${itemKey}" type="button" class="h-6 w-6 rounded bg-zinc-200 text-xs font-bold text-zinc-700">+</button>
+                  <button data-qty-minus="${safeItemKey}" type="button" class="h-6 w-6 rounded bg-zinc-200 text-xs font-bold text-zinc-700">-</button>
+                  <span class="w-7 text-center text-xs font-semibold">x${qty}</span>
+                  <button data-qty-plus="${safeItemKey}" type="button" class="h-6 w-6 rounded bg-zinc-200 text-xs font-bold text-zinc-700">+</button>
                 </div>`
           }
         </div>
@@ -80,7 +83,9 @@ export function renderOrderModal(state) {
 
   syncTableOccupiedState(state, state.currentOrderKey);
 
-  const staticTable = document.querySelector(`[data-static-table][data-order-key="${state.currentOrderKey}"]`);
+  const staticTable = document.querySelector(
+    `[data-static-table][data-order-key="${escapeCssAttrValue(state.currentOrderKey)}"]`,
+  );
   if (staticTable) {
     const occupied = items.some((item) => !item.deleted && Number(item.qty || 0) > 0);
     staticTable.className = occupied

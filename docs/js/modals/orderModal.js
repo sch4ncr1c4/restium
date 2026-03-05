@@ -1,4 +1,4 @@
-﻿import { openModal, closeModal } from "./modalCore.js";
+import { openModal, closeModal } from "./modalCore.js";
 import { getPlanKeyByGrid } from "../plans/planGrid.js";
 import { renderCatalog } from "../catalog/catalogRender.js";
 import { renderOrderModal, renderWaiters, ensureOrderMeta } from "../orders/ordersRender.js";
@@ -26,8 +26,17 @@ const CATALOG_PALETTE = [
   "#7D8796",
 ];
 
+const MAX_PRODUCT_NAME_LENGTH = 60;
+const MAX_WAITER_NAME_LENGTH = 60;
+const MAX_CATEGORY_NAME_LENGTH = 30;
+
 function normalizeCategory(value) {
   return (value || "").trim();
+}
+
+function isUnsafeObjectKey(value) {
+  const key = String(value || "").toLowerCase();
+  return key === "__proto__" || key === "prototype" || key === "constructor";
 }
 
 function normalizeProductName(value) {
@@ -112,23 +121,27 @@ export function renderOrderCategories(state) {
 
   const chips = document.getElementById("orderCategoryChips");
   if (chips) {
-    chips.innerHTML = state.categories
-      .map((category) => {
-        const active = category === state.selectedCatalogCategory;
-        const customColor = state.catalogCategoryColors?.[category];
-        const hasCustomColor = Boolean(customColor) && customColor.toUpperCase() !== "#FFFFFF";
-        const base = "rounded-md border px-5 py-2.5 text-base font-semibold transition";
-        const style = hasCustomColor
-          ? active
-            ? "border-zinc-700 text-white ring-2 ring-zinc-400 ring-offset-1"
-            : "border-transparent text-white hover:brightness-95"
-          : active
-            ? "border-emeraldbrand bg-emerald-50 text-emerald-800"
-            : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400";
-        const inlineStyle = hasCustomColor ? ` style="background-color:${customColor}"` : "";
-        return `<button type="button" data-category-chip="${category}" class="${base} ${style}"${inlineStyle}>${category}</button>`;
-      })
-      .join("");
+    chips.replaceChildren();
+    state.categories.forEach((category) => {
+      const active = category === state.selectedCatalogCategory;
+      const customColor = state.catalogCategoryColors?.[category];
+      const hasCustomColor = Boolean(customColor) && customColor.toUpperCase() !== "#FFFFFF";
+      const base = "rounded-md border px-5 py-2.5 text-base font-semibold transition";
+      const style = hasCustomColor
+        ? active
+          ? "border-zinc-700 text-white ring-2 ring-zinc-400 ring-offset-1"
+          : "border-transparent text-white hover:brightness-95"
+        : active
+          ? "border-emeraldbrand bg-emerald-50 text-emerald-800"
+          : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.categoryChip = category;
+      button.className = `${base} ${style}`;
+      if (hasCustomColor) button.style.backgroundColor = customColor;
+      button.textContent = category;
+      chips.appendChild(button);
+    });
   }
 
   const removeButton = document.getElementById("removeCategoryButton");
@@ -140,9 +153,13 @@ export function renderOrderCategories(state) {
 
   const deleteCategorySelect = document.getElementById("deleteCategorySelect");
   if (deleteCategorySelect) {
-    deleteCategorySelect.innerHTML = state.categories
-      .map((category) => `<option value="${category}">${category}</option>`)
-      .join("");
+    deleteCategorySelect.replaceChildren();
+    state.categories.forEach((category) => {
+      const option = document.createElement("option");
+      option.value = category;
+      option.textContent = category;
+      deleteCategorySelect.appendChild(option);
+    });
     deleteCategorySelect.value = state.selectedCatalogCategory || state.categories[0];
   }
 
@@ -193,7 +210,7 @@ export function renderCatalogPaintUI(state) {
   toggle.className = state.catalogPaletteOpen
     ? "h-10 w-10 rounded-full bg-emeraldbrand text-white shadow-lg transition hover:bg-emerald-600"
     : "h-10 w-10 rounded-full bg-zinc-900 text-white shadow-lg transition hover:bg-zinc-700";
-  toggle.textContent = state.catalogPaletteOpen ? "×" : "🎨";
+  toggle.textContent = state.catalogPaletteOpen ? "\u00D7" : "\uD83C\uDFA8";
 }
 
 export function initOrderModal(state) {
@@ -261,7 +278,7 @@ export function initOrderModal(state) {
         <div id="catalogPaletteTray" class="pointer-events-none flex max-w-[80vw] items-center gap-2 rounded-full border border-zinc-200 bg-white/95 px-3 py-2 shadow-xl transition-all duration-200 opacity-0 translate-x-3 scale-95 origin-right">
           <div id="catalogColorPalette" class="flex flex-wrap items-center gap-1.5"></div>
         </div>
-        <button id="toggleCatalogPalette" type="button" class="pointer-events-auto h-9 w-9 rounded-full bg-zinc-900 text-white shadow-lg transition hover:bg-zinc-700" aria-label="Mostrar paleta">🎨</button>
+        <button id="toggleCatalogPalette" type="button" class="pointer-events-auto h-9 w-9 rounded-full bg-zinc-900 text-white shadow-lg transition hover:bg-zinc-700" aria-label="Mostrar paleta">&#x1F3A8;</button>
       </div>
     </div>
   `;
@@ -348,17 +365,24 @@ function renderStaticPlanBoard(state, planKey) {
   const board = document.getElementById(config.boardId);
   if (!board) return;
   const planState = ensureStaticPlanState(state, planKey);
-  board.innerHTML = planState.tables
-    .map((tableNumber) => {
-      const orderKey = `${config.orderPrefix}${tableNumber}`;
-      const items = state.ordersByTable[orderKey] || [];
-      const occupied = items.some((item) => !item.deleted && Number(item.qty || 0) > 0);
-      const style = occupied
-        ? "border-rose-500 bg-rose-100 text-rose-800 hover:border-rose-600 hover:bg-rose-200"
-        : "border-emerald-500 bg-emerald-100 text-emerald-800 hover:border-emerald-600 hover:bg-emerald-200";
-      return `<button type="button" data-static-table data-order-key="${orderKey}" data-table-label="${tableNumber}" class="h-10 w-10 rounded-md border text-[10px] font-semibold leading-none transition ${style}" aria-label="Mesa ${tableNumber}">${tableNumber}</button>`;
-    })
-    .join("");
+  board.replaceChildren();
+  planState.tables.forEach((tableNumber) => {
+    const orderKey = `${config.orderPrefix}${tableNumber}`;
+    const items = state.ordersByTable[orderKey] || [];
+    const occupied = items.some((item) => !item.deleted && Number(item.qty || 0) > 0);
+    const style = occupied
+      ? "border-rose-500 bg-rose-100 text-rose-800 hover:border-rose-600 hover:bg-rose-200"
+      : "border-emerald-500 bg-emerald-100 text-emerald-800 hover:border-emerald-600 hover:bg-emerald-200";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.staticTable = "";
+    button.dataset.orderKey = orderKey;
+    button.dataset.tableLabel = String(tableNumber);
+    button.className = `h-10 w-10 rounded-md border text-[10px] font-semibold leading-none transition ${style}`;
+    button.setAttribute("aria-label", `Mesa ${tableNumber}`);
+    button.textContent = String(tableNumber);
+    board.appendChild(button);
+  });
 }
 
 function hasActiveItems(items) {
@@ -437,17 +461,21 @@ export function openTableOrderModal(state, table) {
   const options = state.waiterPickerOptions;
   if (!options) return;
   const waiters = getSelectableWaiters(state);
-  options.innerHTML = waiters
-    .map(
-      (waiter) =>
-        `<button type="button" data-pick-waiter="${waiter}" class="rounded-md bg-zinc-100 px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-200">${waiter}</button>`,
-    )
-    .join("");
+  options.replaceChildren();
+  waiters.forEach((waiter) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.pickWaiter = waiter;
+    button.className = "rounded-md bg-zinc-100 px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-200";
+    button.textContent = waiter;
+    options.appendChild(button);
+  });
 
   options.onclick = (event) => {
     const button = event.target.closest("[data-pick-waiter]");
     if (!button) return;
     const waiterName = button.dataset.pickWaiter;
+    if (!getSelectableWaiters(state).includes(waiterName)) return;
     closeModal(state, state.waiterPickerModal, { panel: state.waiterPickerPanel, restoreFocus: false });
     openOrderModalForTable(state, table, waiterName);
   };
@@ -476,12 +504,18 @@ export function openStaticPlanWaiterModal(state, planLabel) {
 
   const options = state.waiterPickerOptions;
   if (!options) return;
-  options.innerHTML =
-    '<button type="button" data-pick-waiter="Terminal" class="rounded-md bg-zinc-100 px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-200">Terminal</button>';
+  options.replaceChildren();
+  const terminalButton = document.createElement("button");
+  terminalButton.type = "button";
+  terminalButton.dataset.pickWaiter = "Terminal";
+  terminalButton.className = "rounded-md bg-zinc-100 px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-200";
+  terminalButton.textContent = "Terminal";
+  options.appendChild(terminalButton);
 
   options.onclick = (event) => {
     const button = event.target.closest("[data-pick-waiter]");
     if (!button) return;
+    if (button.dataset.pickWaiter !== "Terminal") return;
     const selectedPlanKey = state.pendingStaticPlanKey;
     if (!selectedPlanKey) return;
     const planState = ensureStaticPlanState(state, selectedPlanKey);
@@ -522,11 +556,22 @@ export function openStaticTableOrderModal(state, table) {
 export function initQuickCatalogModals(state) {
   const rightPanelActions = state.openCashModal?.parentElement;
   if (rightPanelActions && !document.getElementById("openAddProductModal")) {
-    rightPanelActions.insertAdjacentHTML(
-      "beforeend",
-      '<button id="openAddProductModal" type="button" class="rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-zinc-700">Agregar articulo</button>' +
-        '<button id="openAddWaiterModal" type="button" class="rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-zinc-700">Crear mozo</button>',
-    );
+    const addProductButton = document.createElement("button");
+    addProductButton.id = "openAddProductModal";
+    addProductButton.type = "button";
+    addProductButton.className =
+      "rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-zinc-700";
+    addProductButton.textContent = "Agregar articulo";
+
+    const addWaiterButton = document.createElement("button");
+    addWaiterButton.id = "openAddWaiterModal";
+    addWaiterButton.type = "button";
+    addWaiterButton.className =
+      "rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-zinc-700";
+    addWaiterButton.textContent = "Crear mozo";
+
+    rightPanelActions.appendChild(addProductButton);
+    rightPanelActions.appendChild(addWaiterButton);
   }
 
   const addProductModal = document.createElement("div");
@@ -612,17 +657,24 @@ export function initQuickCatalogModals(state) {
     const matches = query
       ? state.productsCatalog.filter((product) => product.name.toLowerCase().includes(query))
       : state.productsCatalog.slice(0, 8);
-    results.innerHTML = matches.length
-      ? matches
-          .slice(0, 12)
-          .map(
-            (product) => {
-              const categoryLabel = state.categories.includes(product.category) ? product.category : "Sin categoria";
-              return `<button type="button" data-search-product-id="${product.id}" class="mb-1 block w-full rounded-md px-2 py-1 text-left hover:bg-zinc-100">${product.name} · ${categoryLabel}</button>`;
-            },
-          )
-          .join("")
-      : '<p class="px-2 py-1 text-zinc-500">Sin resultados</p>';
+    results.replaceChildren();
+    if (!matches.length) {
+      const empty = document.createElement("p");
+      empty.className = "px-2 py-1 text-zinc-500";
+      empty.textContent = "Sin resultados";
+      results.appendChild(empty);
+      return;
+    }
+
+    matches.slice(0, 12).forEach((product) => {
+      const categoryLabel = state.categories.includes(product.category) ? product.category : "Sin categoria";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.searchProductId = product.id;
+      button.className = "mb-1 block w-full rounded-md px-2 py-1 text-left hover:bg-zinc-100";
+      button.textContent = `${product.name} - ${categoryLabel}`;
+      results.appendChild(button);
+    });
   };
 
   const catalogBoardMenu = document.createElement("div");
@@ -678,15 +730,17 @@ export function initQuickCatalogModals(state) {
   document.getElementById("orderCategoryChips")?.addEventListener("click", (event) => {
     const chip = event.target.closest("[data-category-chip]");
     if (!chip) return;
+    const chipCategory = normalizeCategory(chip.dataset.categoryChip);
+    if (!chipCategory || !categoryExists(state, chipCategory)) return;
 
     if (state.catalogPaintColor && !state.catalogLocked) {
-      const categoryToPaint = chip.dataset.categoryChip;
+      const categoryToPaint = chipCategory;
       state.catalogCategoryColors[categoryToPaint] = state.catalogPaintColor;
       renderOrderCategories(state);
       return;
     }
 
-    state.selectedCatalogCategory = chip.dataset.categoryChip;
+    state.selectedCatalogCategory = chipCategory;
     renderOrderCategories(state);
     renderCatalog(state);
   });
@@ -728,7 +782,7 @@ export function initQuickCatalogModals(state) {
     if (!catalogContextProductId) return;
     const activeCategory = getActiveCatalogCategory(state);
     if (!state.catalogHiddenByCategory[activeCategory]) {
-      state.catalogHiddenByCategory[activeCategory] = {};
+      state.catalogHiddenByCategory[activeCategory] = Object.create(null);
     }
     state.catalogHiddenByCategory[activeCategory][catalogContextProductId] = true;
     if (state.catalogLayoutByCategory[activeCategory] && state.catalogLayoutByCategory[activeCategory][catalogContextProductId]) {
@@ -765,6 +819,11 @@ export function initQuickCatalogModals(state) {
       err.classList.remove("hidden");
       return;
     }
+    if (name.length > MAX_PRODUCT_NAME_LENGTH) {
+      err.textContent = `El nombre no puede superar ${MAX_PRODUCT_NAME_LENGTH} caracteres.`;
+      err.classList.remove("hidden");
+      return;
+    }
 
     const existing = findProductByName(state, name);
     if (existing) {
@@ -781,7 +840,7 @@ export function initQuickCatalogModals(state) {
       existing.category = selectedCategory;
 
       if (!state.catalogHiddenByCategory[selectedCategory]) {
-        state.catalogHiddenByCategory[selectedCategory] = {};
+        state.catalogHiddenByCategory[selectedCategory] = Object.create(null);
       }
       delete state.catalogHiddenByCategory[selectedCategory][existing.id];
       if (existingCategory && existingCategory !== selectedCategory && state.catalogLayoutByCategory[existingCategory]) {
@@ -806,7 +865,7 @@ export function initQuickCatalogModals(state) {
     const newProduct = { id: `p-${Date.now()}`, name, price, category: selectedCategory };
     state.productsCatalog.push(newProduct);
     if (!state.catalogHiddenByCategory[selectedCategory]) {
-      state.catalogHiddenByCategory[selectedCategory] = {};
+      state.catalogHiddenByCategory[selectedCategory] = Object.create(null);
     }
     delete state.catalogHiddenByCategory[selectedCategory][newProduct.id];
     state.selectedCatalogCategory = selectedCategory;
@@ -830,6 +889,11 @@ export function initQuickCatalogModals(state) {
     err.classList.add("hidden");
     if (!name) {
       err.textContent = "Ingresa un nombre.";
+      err.classList.remove("hidden");
+      return;
+    }
+    if (name.length > MAX_WAITER_NAME_LENGTH) {
+      err.textContent = `El nombre no puede superar ${MAX_WAITER_NAME_LENGTH} caracteres.`;
       err.classList.remove("hidden");
       return;
     }
@@ -857,9 +921,20 @@ export function initQuickCatalogModals(state) {
       err.classList.remove("hidden");
       return;
     }
+    if (name.length > MAX_CATEGORY_NAME_LENGTH) {
+      err.textContent = `La categoria no puede superar ${MAX_CATEGORY_NAME_LENGTH} caracteres.`;
+      err.classList.remove("hidden");
+      return;
+    }
 
     if (categoryExists(state, name)) {
       err.textContent = "Esa categoria ya existe.";
+      err.classList.remove("hidden");
+      return;
+    }
+
+    if (isUnsafeObjectKey(name)) {
+      err.textContent = "Ese nombre de categoria no esta permitido.";
       err.classList.remove("hidden");
       return;
     }
