@@ -8,9 +8,23 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    (() => {
+      try {
+        const storedTheme = localStorage.getItem("dashboardTheme");
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (storedTheme === "dark" || (!storedTheme && prefersDark)) {
+          document.documentElement.classList.add("dark");
+        }
+      } catch (_error) {
+        // Ignore and keep light mode.
+      }
+    })();
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
+      darkMode: "class",
       theme: {
         extend: {
           fontFamily: {
@@ -29,19 +43,23 @@
 <body class="dashboard-page bg-zinc-100 font-sans text-zinc-800">
   <header class="sticky top-0 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur">
     <div class="dashboard-header-inner">
-      <a href="../index.html" class="text-lg font-semibold text-zinc-900"><img src="../img/logos/restium-logo.png" alt="logo-restium" class="h-[75px] w-[75px] rounded-full object-cover"></a>
+      <a href="../index.html" class="text-lg font-semibold text-zinc-900"><img src="../img/logos/restium-logo.png" alt="logo-restium" class="h-[64px] w-[64px] rounded-full object-cover"></a>
 
       <div class="flex items-center gap-2 sm:gap-3">
-        <button data-view="menu" type="button" class="top-tab rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-zinc-700 sm:text-sm">Admin menu digital</button>
-        <button data-view="delivery" type="button" class="top-tab rounded-lg bg-emeraldbrand px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-600 sm:text-sm">Admin delivery</button>
-
         <div class="relative">
           <button id="profileButton" type="button" class="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800 text-sm font-semibold text-white" aria-label="Abrir perfil" aria-expanded="false">U</button>
-          <div id="profileMenu" class="absolute right-0 top-12 hidden w-56 rounded-xl border border-zinc-200 bg-white p-2 shadow-lg">
-            <p class="border-b border-zinc-100 px-2 py-2 text-xs text-zinc-500">Usuario administrador</p>
+          <div id="profileMenu" class="absolute right-0 top-12 hidden w-56 rounded-xl border border-zinc-200 bg-white p-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+            <p id="profileUserLabel" class="border-b border-zinc-100 px-2 py-2 text-xs text-zinc-500">Usuario administrador</p>
             <a href="#" class="mt-1 block rounded-md px-2 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Cambiar contraseña</a>
             <a href="#" class="block rounded-md px-2 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Cambiar foto de perfil</a>
-            <a href="#" class="block rounded-md px-2 py-2 text-sm text-zinc-700 hover:bg-zinc-100">Cerrar sesion</a>
+            <button id="themeToggleButton" type="button" class="flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100">
+              <span class="flex items-center gap-2">
+                <span id="themeIconSun" aria-hidden="true">☀</span>
+                <span id="themeIconMoon" class="hidden" aria-hidden="true">☾</span>
+                <span id="themeToggleLabel">Modo oscuro</span>
+              </span>
+            </button>
+            <a id="logoutLink" href="#" class="block rounded-md px-2 py-2 text-sm text-rose-700 hover:bg-rose-50">Cerrar sesion</a>
           </div>
         </div>
       </div>
@@ -51,15 +69,9 @@
   <div class="dashboard-layout-wrap">
     <aside class="left-rail">
       <div class="flex min-h-[80vh] flex-col items-center justify-start gap-3 rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
-        <button data-view="mesas" type="button" class="side-tab flex h-12 w-12 items-center justify-center rounded-xl bg-emeraldbrand text-sm font-semibold text-white" title="Mesas">
-          <img src="../img/system.png" alt="icon-system" class="h-8 w-8 object-contain transition-transform duration-150 hover:scale-90">
-        </button>
-        <button data-view="menu" type="button" class="side-tab flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-100 text-sm font-semibold text-zinc-700 hover:bg-zinc-200" title="Menu">
-          <img src="../img/digital-menu.png" alt="icon-menu-digital" class="h-8 w-8 object-contain transition-transform duration-150 hover:scale-90">
-        </button>
-        <button data-view="delivery" type="button" class="side-tab flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-100 text-sm font-semibold text-zinc-700 hover:bg-zinc-200" title="Delivery">
-          <img src="../img/delivery.png" alt="icon-delivery" class="h-8 w-8 object-contain transition-transform duration-150 hover:scale-90">
-        </button>
+        <button data-view="mesas" type="button" class="side-tab flex h-12 w-12 items-center justify-center rounded-xl bg-emeraldbrand text-sm font-semibold text-white" title="Mesas">M</button>
+        <button data-view="menu" type="button" class="side-tab flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-100 text-sm font-semibold text-zinc-700 hover:bg-zinc-200" title="Menu">MD</button>
+        <button data-view="delivery" type="button" class="side-tab flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-100 text-sm font-semibold text-zinc-700 hover:bg-zinc-200" title="Delivery">DL</button>
       </div>
     </aside>
 
@@ -82,14 +94,16 @@
               <div class="mb-2 flex items-center justify-between gap-2">
                 <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500">Plano 1</p>
                 <div class="flex items-center gap-1">
-                  <button data-plan-lock-toggle data-plan="primary" type="button" class="rounded-md bg-zinc-900 px-2 py-1 text-[10px] font-semibold text-white hover:bg-zinc-700">Bloquear</button>
-                  <button data-plan-controls-toggle data-plan="primary" type="button" class="rounded-md bg-zinc-100 px-2 py-1 text-[10px] font-semibold text-zinc-700 hover:bg-zinc-200">Opciones</button>
-                  <div data-plan-controls data-plan="primary" class="hidden flex gap-1">
+                  <button data-plan-lock-toggle data-plan="primary" type="button" class="inline-flex items-center justify-center rounded-md bg-zinc-900 p-1.5 text-[10px] font-semibold text-white hover:bg-zinc-700" aria-label="Bloquear plano" title="Bloquear plano">
+                    <svg viewBox="0 0 20 20" fill="currentColor" class="h-3 w-3" aria-hidden="true"><path d="M7 6a3 3 0 116 0v1h-2V6a1 1 0 10-2 0v2h6a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2h2V6z"/></svg>
+                  </button>
+                  <div data-plan-controls data-plan="primary" class="plan-controls-pop flex gap-1">
                     <button data-plan-action="grow" data-plan="primary" type="button" class="rounded-md bg-zinc-900 px-2 py-1 text-[10px] font-semibold text-white hover:bg-zinc-700">+</button>
                     <button data-plan-action="shrink" data-plan="primary" type="button" class="rounded-md bg-zinc-200 px-2 py-1 text-[10px] font-semibold text-zinc-700 hover:bg-zinc-300">-</button>
                     <button data-plan-action="reset" data-plan="primary" type="button" class="rounded-md bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-800 hover:bg-amber-200">Resetear</button>
                     <button data-plan-action="delete" data-plan="primary" type="button" class="rounded-md bg-rose-100 px-2 py-1 text-[10px] font-semibold text-rose-700 hover:bg-rose-200">Eliminar</button>
                   </div>
+                  <button data-plan-controls-toggle data-plan="primary" type="button" class="inline-flex w-[68px] items-center justify-center rounded-md bg-zinc-100 px-2 py-1 text-[10px] font-semibold text-zinc-700 hover:bg-zinc-200">Opciones</button>
                 </div>
               </div>
               <div class="overflow-auto pb-2">
@@ -101,14 +115,16 @@
               <div class="mb-2 flex items-center justify-between gap-2">
                 <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500">Plano 2</p>
                 <div class="flex items-center gap-1">
-                  <button data-plan-lock-toggle data-plan="secondary" type="button" class="rounded-md bg-zinc-900 px-2 py-1 text-[10px] font-semibold text-white hover:bg-zinc-700">Bloquear</button>
-                  <button data-plan-controls-toggle data-plan="secondary" type="button" class="rounded-md bg-zinc-100 px-2 py-1 text-[10px] font-semibold text-zinc-700 hover:bg-zinc-200">Opciones</button>
-                  <div data-plan-controls data-plan="secondary" class="hidden flex gap-1">
+                  <button data-plan-lock-toggle data-plan="secondary" type="button" class="inline-flex items-center justify-center rounded-md bg-zinc-900 p-1.5 text-[10px] font-semibold text-white hover:bg-zinc-700" aria-label="Bloquear plano" title="Bloquear plano">
+                    <svg viewBox="0 0 20 20" fill="currentColor" class="h-3 w-3" aria-hidden="true"><path d="M7 6a3 3 0 116 0v1h-2V6a1 1 0 10-2 0v2h6a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2h2V6z"/></svg>
+                  </button>
+                  <div data-plan-controls data-plan="secondary" class="plan-controls-pop flex gap-1">
                     <button data-plan-action="grow" data-plan="secondary" type="button" class="rounded-md bg-zinc-900 px-2 py-1 text-[10px] font-semibold text-white hover:bg-zinc-700">+</button>
                     <button data-plan-action="shrink" data-plan="secondary" type="button" class="rounded-md bg-zinc-200 px-2 py-1 text-[10px] font-semibold text-zinc-700 hover:bg-zinc-300">-</button>
                     <button data-plan-action="reset" data-plan="secondary" type="button" class="rounded-md bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-800 hover:bg-amber-200">Resetear</button>
                     <button data-plan-action="delete" data-plan="secondary" type="button" class="rounded-md bg-rose-100 px-2 py-1 text-[10px] font-semibold text-rose-700 hover:bg-rose-200">Eliminar</button>
                   </div>
+                  <button data-plan-controls-toggle data-plan="secondary" type="button" class="inline-flex w-[68px] items-center justify-center rounded-md bg-zinc-100 px-2 py-1 text-[10px] font-semibold text-zinc-700 hover:bg-zinc-200">Opciones</button>
                 </div>
               </div>
               <div class="overflow-auto pb-2">
@@ -148,19 +164,14 @@
         <div class="grid gap-4 md:grid-cols-2">
           <article class="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
             <h2 class="text-sm font-semibold">Categorias</h2>
-            <ul class="mt-2 space-y-1 text-sm text-zinc-600">
-              <li>Entradas</li>
-              <li>Platos principales</li>
-              <li>Postres</li>
-              <li>Bebidas</li>
+            <ul id="menuCategoriesList" class="mt-2 space-y-1 text-sm text-zinc-600">
+              <li>Cargando categorias...</li>
             </ul>
           </article>
           <article class="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
             <h2 class="text-sm font-semibold">Productos destacados</h2>
-            <ul class="mt-2 space-y-1 text-sm text-zinc-600">
-              <li>Milanesa napolitana</li>
-              <li>Tiramisu</li>
-              <li>Limonada con menta</li>
+            <ul id="menuProductsList" class="mt-2 space-y-1 text-sm text-zinc-600">
+              <li>Cargando productos...</li>
             </ul>
           </article>
         </div>
@@ -185,19 +196,24 @@
             <p class="mt-2 text-2xl font-semibold">23</p>
           </article>
         </div>
+        <article class="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+          <h2 class="text-sm font-semibold">Productos visibles en delivery</h2>
+          <ul id="deliveryProductsList" class="mt-2 space-y-1 text-sm text-zinc-600">
+            <li>Cargando productos...</li>
+          </ul>
+        </article>
       </section>
     </main>
 
     <aside class="right-rail">
       <div class="flex min-h-[80vh] flex-col items-center justify-between rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
         <div class="flex w-full flex-col gap-3">
-          <button id="openCashModal" type="button" class="group flex items-center justify-center rounded-xl px-2 py-2 text-xs font-semibold text-white transition hover:bg-zinc-700">
-            <img src="../img/movment.png" alt="movimiento-caja" class="h-10 w-10 object-contain transition-transform duration-150 group-hover:scale-90">
-          </button>
+          <button id="openClockModal" type="button" class="flex h-10 w-full items-center justify-center rounded-lg bg-zinc-900 px-3 py-2 text-center text-xs font-semibold text-white transition hover:bg-zinc-700">Fichaje</button>
+          <button id="openCashModal" type="button" class="flex h-10 w-full items-center justify-center rounded-lg bg-zinc-900 px-3 py-2 text-center text-xs font-semibold text-white transition hover:bg-zinc-700">Caja</button>
         </div>
         <div class="w-full text-center text-xs text-zinc-500">
           <p>Turno noche</p>
-          <p>Actualizado 22:40</p>
+          <p id="cashSummaryUpdatedAt">Actualizado --:--</p>
         </div>
       </div>
     </aside>
@@ -208,6 +224,17 @@
       <div class="mb-4 flex items-center justify-between">
         <h2 class="text-lg font-semibold text-zinc-900 sm:text-xl">Movimientos de caja</h2>
         <button id="closeCashModal" type="button" class="rounded-md bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-200 sm:text-sm">Cerrar</button>
+      </div>
+
+      <div class="mb-4 grid gap-3 sm:grid-cols-2">
+        <div class="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+          <p class="text-xs text-zinc-500">Ordenes de hoy</p>
+          <p id="cashSummaryOrders" class="mt-1 text-lg font-semibold text-zinc-900">-</p>
+        </div>
+        <div class="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+          <p class="text-xs text-zinc-500">Ventas de hoy</p>
+          <p id="cashSummaryTotal" class="mt-1 text-lg font-semibold text-zinc-900">$-</p>
+        </div>
       </div>
 
       <div class="grid gap-4 md:grid-cols-2">

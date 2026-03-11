@@ -19,7 +19,9 @@ import { initPlanDrag, startPlanPan, startTableDrag, endDrag } from "./plans/pla
 import { initTableModals } from "./modals/tableModals.js";
 import { initViews } from "./ui/views.js";
 import { initProfileMenu } from "./ui/profileMenu.js";
+import { initDashboardData } from "./ui/dashboardData.js";
 import { initCashModal } from "./modals/cashModal.js";
+import { initClockModal } from "./modals/clockModal.js";
 import {
   initOrderModal,
   openTableOrderModal,
@@ -70,9 +72,12 @@ initTableModals(state, {
 });
 
 initCashModal(state);
+initClockModal(state);
 initViews(state);
 initProfileMenu(state);
-initQuickCatalogModals(state);
+initDashboardData(state).finally(() => {
+  initQuickCatalogModals(state);
+});
 initOrdersEvents(state);
 initCatalogDrag(state);
 
@@ -83,10 +88,12 @@ requestAnimationFrame(() => syncStaticAsideHeight(state, true));
 document.querySelectorAll("[data-static-plan]").forEach((card) => {
   const planLabel = card.dataset.staticPlan || "Plano";
   card.addEventListener("click", (event) => {
+    if (!state.permissions?.canEditPlans) return;
     if (event.target.closest("[data-static-table]")) return;
     openStaticPlanWaiterModal(state, planLabel);
   });
   card.addEventListener("keydown", (event) => {
+    if (!state.permissions?.canEditPlans) return;
     if (event.key !== "Enter") return;
     event.preventDefault();
     openStaticPlanWaiterModal(state, planLabel);

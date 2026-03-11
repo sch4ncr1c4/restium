@@ -53,6 +53,7 @@ export function hidePlansContextMenu(state) {
 }
 
 export function handleTableContextMenu(state, event) {
+  if (!state.permissions?.canEditPlans) return;
   event.preventDefault();
   const table = event.currentTarget;
   const grid = table.parentElement;
@@ -75,6 +76,7 @@ export function handleTableContextMenu(state, event) {
 }
 
 export function handleGridContextMenu(state, event) {
+  if (!state.permissions?.canEditPlans) return;
   if (event.target !== event.currentTarget) return;
   event.preventDefault();
   const grid = event.currentTarget;
@@ -97,6 +99,7 @@ export function handleGridContextMenu(state, event) {
 }
 
 export function handlePlansColumnContextMenu(state, event) {
+  if (!state.permissions?.canEditPlans) return;
   if (!state.plansColumn || !state.plansColumn.contains(event.target)) return;
   if (event.target.closest("[id^='tablesGrid']")) return;
   event.preventDefault();

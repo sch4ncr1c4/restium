@@ -88,6 +88,7 @@ export function initTableModals(state, handlers) {
   state.confirmAddTableBtn = document.getElementById("confirmAddTable");
 
   state.addTableAction.addEventListener("click", () => {
+    if (!state.permissions?.canEditPlans) return;
     if (!state.contextTargetGrid) return;
     const planKey = getPlanKeyByGrid(state, state.contextTargetGrid);
     if (isPlanLocked(state, planKey)) return;
@@ -107,6 +108,7 @@ export function initTableModals(state, handlers) {
   });
 
   state.confirmAddTableBtn.addEventListener("click", () => {
+    if (!state.permissions?.canEditPlans) return;
     if (!state.contextTargetGrid) return;
     const planKey = getPlanKeyByGrid(state, state.contextTargetGrid);
     if (isPlanLocked(state, planKey)) return;
@@ -148,6 +150,7 @@ export function initTableModals(state, handlers) {
   });
 
   state.deleteTableAction.addEventListener("click", () => {
+    if (!state.permissions?.canEditPlans) return;
     if (!state.contextTargetTable) return;
     const tableNumber = state.contextTargetTable.textContent?.trim() || "";
     state.deleteTableModalText.textContent = `Vas a eliminar la mesa ${tableNumber}. Esta accion no se puede deshacer.`;
@@ -163,6 +166,7 @@ export function initTableModals(state, handlers) {
   });
 
   state.confirmDeleteTable.addEventListener("click", () => {
+    if (!state.permissions?.canEditPlans) return;
     if (state.contextTargetTable) {
       const grid = state.contextTargetTable.parentElement;
       state.contextTargetTable.remove();
@@ -182,6 +186,7 @@ export function initTableModals(state, handlers) {
   });
 
   state.confirmDeletePlan.addEventListener("click", () => {
+    if (!state.permissions?.canEditPlans) return;
     if (state.pendingPlanAction) {
       const { type, planKey } = state.pendingPlanAction;
       const plan = state.plans[planKey];
@@ -223,6 +228,7 @@ export function initTableModals(state, handlers) {
   });
 
   const openAddPlanConfirm = () => {
+    if (!state.permissions?.canEditPlans) return;
     state.pendingPlanAction = { type: "add" };
     state.deletePlanModalTitle.textContent = "Agregar plano";
     state.deletePlanModalText.textContent = "Vas a agregar un nuevo plano. Deseas continuar?";
@@ -245,6 +251,7 @@ export function initTableModals(state, handlers) {
   document.addEventListener("click", (event) => {
     const lockToggle = event.target.closest("[data-plan-lock-toggle]");
     if (lockToggle) {
+      if (!state.permissions?.canEditPlans) return;
       const planKey = lockToggle.dataset.plan;
       if (!state.plans[planKey] || !state.plans[planKey].card || !state.plans[planKey].card.isConnected) return;
       state.plans[planKey].locked = !state.plans[planKey].locked;
@@ -254,17 +261,26 @@ export function initTableModals(state, handlers) {
 
     const controlsToggle = event.target.closest("[data-plan-controls-toggle]");
     if (controlsToggle) {
+      if (!state.permissions?.canEditPlans) return;
       const planKey = controlsToggle.dataset.plan;
       const controls = document.querySelector(`[data-plan-controls][data-plan="${planKey}"]`);
       if (!controls) return;
-      const willShow = controls.classList.contains("hidden");
-      controls.classList.toggle("hidden", !willShow);
-      controlsToggle.textContent = willShow ? "Ocultar" : "Opciones";
+      const isOpen = controls.classList.contains("is-open");
+      if (!isOpen) {
+        controls.classList.add("is-open");
+        controlsToggle.textContent = "Ocultar";
+        controlsToggle.setAttribute("aria-expanded", "true");
+      } else {
+        controls.classList.remove("is-open");
+        controlsToggle.textContent = "Opciones";
+        controlsToggle.setAttribute("aria-expanded", "false");
+      }
       return;
     }
 
     const actionButton = event.target.closest("[data-plan-action]");
     if (!actionButton) return;
+    if (!state.permissions?.canEditPlans) return;
 
     const action = actionButton.dataset.planAction;
     const planKey = actionButton.dataset.plan;

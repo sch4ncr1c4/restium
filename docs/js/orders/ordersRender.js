@@ -5,17 +5,21 @@ import { escapeHtml, escapeCssAttrValue } from "../utils/dom.js";
 
 export function ensureOrderMeta(state, key) {
   if (!state.metaByTable[key]) {
-    state.metaByTable[key] = { waiterName: "Terminal", discountAmount: 0, depositAmount: 0, invoiceType: "" };
+    state.metaByTable[key] = { waiterName: state.waiters[0] || "", discountAmount: 0, depositAmount: 0, invoiceType: "" };
   }
   if (!state.ordersByTable[key]) state.ordersByTable[key] = [];
-  if (!state.waiters.includes(state.metaByTable[key].waiterName)) {
-    state.metaByTable[key].waiterName = state.waiters[0] || "Terminal";
+  if (state.waiters.length && !state.waiters.includes(state.metaByTable[key].waiterName)) {
+    state.metaByTable[key].waiterName = state.waiters[0];
   }
 }
 
 export function renderWaiters(state) {
   const waiterSelect = document.getElementById("orderWaiterSelect");
-  waiterSelect.innerHTML = state.waiters.map((w) => `<option value="${escapeHtml(w)}">${escapeHtml(w)}</option>`).join("");
+  const source = Array.isArray(state.waiters) ? state.waiters : [];
+  waiterSelect.innerHTML = source.length
+    ? source.map((w) => `<option value="${escapeHtml(w)}">${escapeHtml(w)}</option>`).join("")
+    : '<option value="">Sin mozos cargados</option>';
+  waiterSelect.disabled = !source.length;
 }
 
 export function renderOrderModal(state) {
@@ -27,7 +31,11 @@ export function renderOrderModal(state) {
   const totals = calcTotals(items, meta);
 
   const waiterSelect = document.getElementById("orderWaiterSelect");
-  waiterSelect.value = meta.waiterName;
+  if (state.waiters.length) {
+    waiterSelect.value = meta.waiterName;
+  } else {
+    waiterSelect.value = "";
+  }
   document.getElementById("orderItemsCount").textContent = `${items.length} items`;
 
   document.getElementById("orderItemsList").innerHTML = items
@@ -89,7 +97,7 @@ export function renderOrderModal(state) {
   if (staticTable) {
     const occupied = items.some((item) => !item.deleted && Number(item.qty || 0) > 0);
     staticTable.className = occupied
-      ? "h-10 w-10 rounded-md border border-rose-500 bg-rose-100 text-[10px] font-semibold leading-none text-rose-800 transition hover:border-rose-600 hover:bg-rose-200"
-      : "h-10 w-10 rounded-md border border-emerald-500 bg-emerald-100 text-[10px] font-semibold leading-none text-emerald-800 transition hover:border-emerald-600 hover:bg-emerald-200";
+      ? "h-10 w-10 rounded-md border border-rose-500 bg-rose-100 text-[10px] font-semibold leading-none text-rose-800 transition hover:border-rose-600 hover:bg-rose-200 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-100 dark:hover:border-rose-700 dark:hover:bg-rose-900"
+      : "h-10 w-10 rounded-md border border-emerald-500 bg-emerald-100 text-[10px] font-semibold leading-none text-emerald-800 transition hover:border-emerald-600 hover:bg-emerald-200 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-100 dark:hover:border-emerald-700 dark:hover:bg-emerald-900";
   }
 }

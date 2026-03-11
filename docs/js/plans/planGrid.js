@@ -23,6 +23,11 @@ const TABLE_BASE_CLASSES = [
   "text-emerald-800",
   "hover:border-emerald-600",
   "hover:bg-emerald-200",
+  "dark:border-emerald-800",
+  "dark:bg-emerald-950",
+  "dark:text-emerald-100",
+  "dark:hover:border-emerald-700",
+  "dark:hover:bg-emerald-900",
 ];
 
 const TABLE_OCCUPIED_CLASSES = [
@@ -31,6 +36,11 @@ const TABLE_OCCUPIED_CLASSES = [
   "text-rose-800",
   "hover:border-rose-600",
   "hover:bg-rose-200",
+  "dark:border-rose-800",
+  "dark:bg-rose-950",
+  "dark:text-rose-100",
+  "dark:hover:border-rose-700",
+  "dark:hover:bg-rose-900",
 ];
 
 export function getActivePlanEntries(state) {
@@ -47,6 +57,11 @@ export function getMissingPlanKey(state) {
 
 export function updateAddPlanButtonState(state) {
   if (!state.addPlanButton) return;
+  if (!state.permissions?.canEditPlans) {
+    state.addPlanButton.disabled = true;
+    state.addPlanButton.classList.add("opacity-40", "cursor-not-allowed");
+    return;
+  }
   const missing = getMissingPlanKey(state);
   state.addPlanButton.disabled = !missing;
   state.addPlanButton.classList.toggle("opacity-40", !missing);
@@ -54,6 +69,13 @@ export function updateAddPlanButtonState(state) {
 }
 
 export function updateDeletePlanButtonsState(state) {
+  if (!state.permissions?.canEditPlans) {
+    document.querySelectorAll('[data-plan-action="delete"]').forEach((button) => {
+      button.disabled = true;
+      button.classList.add("opacity-40", "cursor-not-allowed");
+    });
+    return;
+  }
   const canDelete = getActiveRemovablePlanCount(state) > 1;
   document.querySelectorAll('[data-plan-action="delete"]').forEach((button) => {
     button.disabled = !canDelete;
@@ -82,8 +104,9 @@ export function syncStaticAsideHeight(state, forceRecalc = false) {
   const viewportAvailable = Math.max(320, window.innerHeight - asideTop - 16);
   const targetHeight = Math.max(320, Math.min(state.staticAsideBaselineHeight || viewportAvailable, viewportAvailable));
 
-  state.plansColumn.style.maxHeight = `${viewportAvailable}px`;
-  state.plansColumn.style.overflowY = "auto";
+  // Keep plans column without inner scrollbar to avoid layout jitter when controls expand/collapse.
+  state.plansColumn.style.maxHeight = "";
+  state.plansColumn.style.overflowY = "";
   state.staticPlansAside.style.maxHeight = `${viewportAvailable}px`;
   state.staticPlansAside.style.overflowY = "auto";
   if (state.staticAsideBaselineHeight) {
@@ -124,6 +147,17 @@ function getTableSizeForWidth(width, columns, gap) {
   const availableWidth = Math.max(width - PLAN_PADDING * 2, 0);
   const rawSize = Math.floor((availableWidth - gap * (columns - 1)) / columns);
   return clamp(rawSize, MIN_TABLE_SIZE, MAX_TABLE_SIZE);
+}
+
+function getExpandedGap(width, columns, tableSize, baseGap) {
+  if (columns <= 1) return baseGap;
+  const availableWidth = Math.max(width - PLAN_PADDING * 2, 0);
+  const remaining = availableWidth - columns * tableSize;
+  if (remaining <= 0) return baseGap;
+
+  const distributed = Math.floor(remaining / (columns - 1));
+  // Keep spacing controlled on very wide screens.
+  return clamp(distributed, baseGap, 28);
 }
 
 export function setTablePosition(table, left, top) {
@@ -262,10 +296,11 @@ export function applyGridDimensions(grid) {
   const minPlanWidth = Math.min(baseMinWidth, maxResponsiveWidth);
   const width = clamp(requestedWidth, minPlanWidth, maxResponsiveWidth);
   const columns = getColumnsForWidth(width);
-  const gap = getGapForWidth(width);
+  const baseGap = getGapForWidth(width);
   const tableCount = Math.max(getGridTables(grid).length, 1);
   const rows = Math.ceil(tableCount / columns);
-  const tableSize = getTableSizeForWidth(width, columns, gap);
+  const tableSize = getTableSizeForWidth(width, columns, baseGap);
+  const gap = width >= 768 ? getExpandedGap(width, columns, tableSize, baseGap) : baseGap;
   const baseHeight = PLAN_PADDING * 2 + rows * tableSize + (rows - 1) * gap;
   const height = clamp(Math.max(requestedHeight || baseHeight, baseHeight), PLAN_MIN_H, PLAN_MAX_H);
 
@@ -365,14 +400,20 @@ export function updatePlanLockUI(state, planKey) {
   const lockOpenIcon =
     '<svg viewBox="0 0 20 20" fill="currentColor" class="h-3 w-3" aria-hidden="true"><path d="M7 6a3 3 0 116 0v1h-2V6a1 1 0 10-2 0v2h6a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2h2V6z"/></svg>';
   if (locked) {
-    toggle.innerHTML = `${lockClosedIcon}<span>Desbloquear</span>`;
+    toggle.innerHTML = lockClosedIcon;
+    toggle.setAttribute("aria-label", "Desbloquear plano");
+    toggle.setAttribute("title", "Desbloquear plano");
     toggle.className =
-      "inline-flex items-center gap-1 rounded-md bg-emeraldbrand px-2 py-1 text-[10px] font-semibold text-white hover:bg-emerald-600";
+      "inline-flex items-center justify-center rounded-md bg-emeraldbrand p-1.5 text-[10px] font-semibold text-white transition-all duration-200 ease-out hover:bg-emerald-600";
   } else {
-    toggle.innerHTML = `${lockOpenIcon}<span>Bloquear</span>`;
+    toggle.innerHTML = lockOpenIcon;
+    toggle.setAttribute("aria-label", "Bloquear plano");
+    toggle.setAttribute("title", "Bloquear plano");
     toggle.className =
-      "inline-flex items-center gap-1 rounded-md bg-zinc-900 px-2 py-1 text-[10px] font-semibold text-white hover:bg-zinc-700";
+      "inline-flex items-center justify-center rounded-md bg-zinc-900 p-1.5 text-[10px] font-semibold text-white transition-all duration-200 ease-out hover:bg-zinc-700";
   }
+  toggle.classList.remove("plan-lock-bump");
+  requestAnimationFrame(() => toggle.classList.add("plan-lock-bump"));
   setPlanCursor(state, planKey);
 }
 
@@ -399,14 +440,16 @@ export function createPlanCardElement(planKey) {
     <div class="mb-2 flex items-center justify-between gap-2">
       <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500">${meta.title}</p>
       <div class="flex items-center gap-1">
-        <button data-plan-lock-toggle data-plan="${planKey}" type="button" class="rounded-md bg-zinc-900 px-2 py-1 text-[10px] font-semibold text-white hover:bg-zinc-700">Bloquear</button>
-        <button data-plan-controls-toggle data-plan="${planKey}" type="button" class="rounded-md bg-zinc-100 px-2 py-1 text-[10px] font-semibold text-zinc-700 hover:bg-zinc-200">Opciones</button>
-        <div data-plan-controls data-plan="${planKey}" class="hidden flex gap-1">
+        <button data-plan-lock-toggle data-plan="${planKey}" type="button" class="inline-flex items-center justify-center rounded-md bg-zinc-900 p-1.5 text-[10px] font-semibold text-white hover:bg-zinc-700" aria-label="Bloquear plano" title="Bloquear plano">
+          <svg viewBox="0 0 20 20" fill="currentColor" class="h-3 w-3" aria-hidden="true"><path d="M7 6a3 3 0 116 0v1h-2V6a1 1 0 10-2 0v2h6a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2h2V6z"/></svg>
+        </button>
+        <div data-plan-controls data-plan="${planKey}" class="plan-controls-pop flex gap-1">
           <button data-plan-action="grow" data-plan="${planKey}" type="button" class="rounded-md bg-zinc-900 px-2 py-1 text-[10px] font-semibold text-white hover:bg-zinc-700">+</button>
           <button data-plan-action="shrink" data-plan="${planKey}" type="button" class="rounded-md bg-zinc-200 px-2 py-1 text-[10px] font-semibold text-zinc-700 hover:bg-zinc-300">-</button>
           <button data-plan-action="reset" data-plan="${planKey}" type="button" class="rounded-md bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-800 hover:bg-amber-200">Resetear</button>
           <button data-plan-action="delete" data-plan="${planKey}" type="button" class="rounded-md bg-rose-100 px-2 py-1 text-[10px] font-semibold text-rose-700 hover:bg-rose-200">Eliminar</button>
         </div>
+        <button data-plan-controls-toggle data-plan="${planKey}" type="button" class="inline-flex w-[68px] items-center justify-center rounded-md bg-zinc-100 px-2 py-1 text-[10px] font-semibold text-zinc-700 hover:bg-zinc-200">Opciones</button>
       </div>
     </div>
     <div class="overflow-auto pb-2">

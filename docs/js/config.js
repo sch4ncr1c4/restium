@@ -44,5 +44,5 @@ export const DEFAULT_PRODUCTS = [
   { id: "muzza", name: "Pizza muzzarella", price: 9400, category: "Pizzas" },
 ];
 
-export const DEFAULT_WAITERS = ["Terminal", "Juan", "Sofia"];
+export const DEFAULT_WAITERS = [];
 export const DEFAULT_CATEGORIES = ["Bebidas", "Tragos", "Entradas", "Varios", "Burgers", "Pizzas", "Platos", "Postres"];

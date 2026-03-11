@@ -1,6 +1,18 @@
 ﻿import { PLAN_META, DEFAULT_PRODUCTS, DEFAULT_WAITERS, DEFAULT_CATEGORIES } from "./config.js";
 
 export const state = {
+  currentUser: null,
+  permissions: {
+    restrictToMesas: false,
+    canViewMenuDelivery: true,
+    canEditPlans: true,
+    canManageCatalog: true,
+    canManageStaff: true,
+    canUseCash: true,
+    canUseClock: true,
+    canUseTerminalWaiter: false,
+  },
+
   plansColumn: null,
   addPlanButton: null,
   staticPlansAside: null,
@@ -55,11 +67,14 @@ export const state = {
   closeCashModal: null,
   cashModal: null,
   cashModalPanel: null,
+  clockModal: null,
+  clockModalPanel: null,
 
   productsCatalog: [...DEFAULT_PRODUCTS],
   categories: [...DEFAULT_CATEGORIES],
   selectedCatalogCategory: "",
   waiters: [...DEFAULT_WAITERS],
+  staffMembers: [],
   ordersByTable: Object.create(null),
   metaByTable: Object.create(null),
   currentOrderKey: null,

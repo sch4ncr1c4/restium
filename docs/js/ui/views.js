@@ -15,6 +15,7 @@
 }
 
 export function setView(state, view, animate = true) {
+  if (state.permissions?.restrictToMesas && view !== "mesas") return;
   if (!state.panels[view]) return;
   if (view === state.currentView && animate) return;
 
@@ -51,6 +52,56 @@ export function setView(state, view, animate = true) {
     state.currentView = view;
     state.panelSwitchTimer = null;
   }, 180);
+}
+
+export function applyRoleAccess(state, user) {
+  const role = String(user?.role || "").toLowerCase();
+  const isMozo = role === "mozo";
+  const canUseClock = role === "admin" || role === "gerente";
+  state.permissions = {
+    restrictToMesas: isMozo,
+    canViewMenuDelivery: !isMozo,
+    canEditPlans: !isMozo,
+    canManageCatalog: !isMozo,
+    canManageStaff: !isMozo,
+    canUseCash: !isMozo,
+    canUseClock,
+    canUseTerminalWaiter: false,
+  };
+
+  const openClockModal = document.getElementById("openClockModal");
+  if (openClockModal) {
+    openClockModal.classList.toggle("hidden", !canUseClock);
+    openClockModal.disabled = !canUseClock;
+  }
+
+  if (!isMozo) return;
+
+  document.querySelectorAll('[data-view="menu"], [data-view="delivery"]').forEach((node) => {
+    node.classList.add("hidden");
+  });
+
+  const menuPanel = document.getElementById("view-menu");
+  const deliveryPanel = document.getElementById("view-delivery");
+  menuPanel?.classList.add("hidden", "pointer-events-none");
+  deliveryPanel?.classList.add("hidden", "pointer-events-none");
+
+  document.querySelectorAll("[data-plan-lock-toggle], [data-plan-controls-toggle], [data-plan-controls], [data-plan-action]").forEach((node) => {
+    node.classList.add("hidden");
+  });
+
+  document.querySelectorAll("[data-static-plan]").forEach((node) => {
+    node.classList.remove("cursor-pointer");
+    node.classList.add("cursor-default");
+    node.setAttribute("aria-disabled", "true");
+    node.setAttribute("tabindex", "-1");
+  });
+
+  const openCashModal = document.getElementById("openCashModal");
+  if (openCashModal) {
+    openCashModal.classList.add("hidden");
+    openCashModal.disabled = true;
+  }
 }
 
 export function initViews(state) {

@@ -41,7 +41,7 @@
         <h2 class="mt-4 text-2xl font-semibold text-zinc-900">Crear cuenta</h2>
         <p class="mt-1 text-sm text-zinc-500">Completa tus datos para comenzar.</p>
 
-        <form class="mt-8 space-y-4" action="#" method="post" autocomplete="on">
+        <form id="signupForm" class="mt-8 space-y-4" action="#" method="post" autocomplete="on">
           <div>
             <label for="business_username" class="mb-1 block text-sm font-medium text-zinc-700">Nombre de usuario del negocio</label>
             <input id="business_username" name="business_username" type="text" required class="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none transition focus:border-emeraldbrand focus:ring-2 focus:ring-emeraldbrand/20" placeholder="ej: la-parrilla-centro">
@@ -64,7 +64,7 @@
 
           <div class="grid gap-4 sm:grid-cols-2">
             <div>
-              <label for="password" class="mb-1 block text-sm font-medium text-zinc-700">Contrasena</label>
+              <label for="password" class="mb-1 block text-sm font-medium text-zinc-700">Contraseña</label>
               <input id="password" name="password" type="password" minlength="8" required class="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none transition focus:border-emeraldbrand focus:ring-2 focus:ring-emeraldbrand/20" placeholder="Minimo 8 caracteres">
             </div>
             <div>
@@ -81,6 +81,8 @@
           <button type="submit" class="w-full rounded-lg bg-emeraldbrand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-600">
             Crear cuenta
           </button>
+
+          <p id="signupMessage" class="text-sm text-zinc-600"></p>
         </form>
 
         <p class="mt-5 text-center text-sm text-zinc-600">

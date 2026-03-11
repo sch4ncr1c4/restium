@@ -59,6 +59,7 @@ function findNextFreeCell(occupied, cols, rows) {
 export function renderCatalog(state) {
   const board = document.getElementById("catalogBoard");
   if (!board) return;
+  const isDarkMode = document.documentElement.classList.contains("dark");
 
   const { width: innerWidth, height: innerHeight } = getBoardSize(board);
   const colPositions = buildAxisPositions(innerWidth);
@@ -103,10 +104,20 @@ export function renderCatalog(state) {
         .map((product) => {
           const pos = layout[product.id];
           const dragClass = state.catalogLocked ? "cursor-default" : "cursor-grab";
-          const tileColor = normalizeHexColor(state.catalogProductColors[product.id], "#FFFFFF");
-          const isPainted = tileColor !== "#FFFFFF";
-          const textClass = isPainted ? "text-white" : "text-zinc-700";
-          return `<button data-product-id="${escapeHtml(product.id)}" type="button" class="absolute rounded-lg border border-zinc-300 px-1 text-center text-[10px] font-semibold ${textClass} hover:border-emeraldbrand ${dragClass}" style="touch-action:none;background-color:${tileColor};width:${CATALOG_TILE_SIZE}px;height:${CATALOG_TILE_SIZE}px;left:${colPositions[pos.col]}px;top:${rowPositions[pos.row]}px"><span class="line-clamp-2 block">${escapeHtml(product.name)}</span></button>`;
+          const rawTileColor = state.catalogProductColors[product.id];
+          const hasCustomColor = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(String(rawTileColor ?? "").trim());
+          const defaultTileColor = isDarkMode ? "#1F2937" : "#FFFFFF";
+          const tileColor = hasCustomColor
+            ? normalizeHexColor(rawTileColor, defaultTileColor)
+            : defaultTileColor;
+          const textClass = hasCustomColor
+            ? tileColor === "#FFFFFF"
+              ? "text-zinc-700"
+              : "text-white"
+            : isDarkMode
+              ? "text-zinc-100"
+              : "text-zinc-700";
+          return `<button data-product-id="${escapeHtml(product.id)}" type="button" class="absolute rounded-lg border border-zinc-300 px-1 text-center text-[10px] font-semibold ${textClass} hover:border-emeraldbrand dark:border-zinc-600 dark:hover:border-emerald-500 ${dragClass}" style="touch-action:none;background-color:${tileColor};width:${CATALOG_TILE_SIZE}px;height:${CATALOG_TILE_SIZE}px;left:${colPositions[pos.col]}px;top:${rowPositions[pos.row]}px"><span class="line-clamp-2 block">${escapeHtml(product.name)}</span></button>`;
         })
         .join("")}
     </div>

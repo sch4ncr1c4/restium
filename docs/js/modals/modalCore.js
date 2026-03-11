@@ -130,6 +130,11 @@ export function closeModal(state, modal, options = {}) {
   const panel = options.panel || modal.__modalPanel;
   const restoreFocus = options.restoreFocus !== false;
 
+  const activeEl = document.activeElement;
+  if (activeEl instanceof HTMLElement && modal.contains(activeEl)) {
+    activeEl.blur();
+  }
+
   modal.setAttribute("aria-hidden", "true");
   modal.classList.remove(OPEN_MODAL_CLASS);
   modal.classList.add(CLOSED_MODAL_CLASS);

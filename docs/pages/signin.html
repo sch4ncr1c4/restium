@@ -38,23 +38,46 @@
 
       <article class="p-6 sm:p-10">
         <a href="../index.html" class="text-sm font-medium text-zinc-500 hover:text-zinc-700">Volver al inicio</a>
-        <h2 class="mt-4 text-2xl font-semibold text-zinc-900">Iniciar sesion</h2>
-        <p class="mt-1 text-sm text-zinc-500">Ingresa con tu cuenta para continuar.</p>
+        <h2 class="mt-4 text-2xl font-semibold text-zinc-900">Iniciar sesión</h2>
+        <p class="mt-1 text-sm text-zinc-500">Ingresa con usuario + PIN o con email + contraseña.</p>
 
-        <form class="mt-8 space-y-4" action="#" method="post" autocomplete="on">
-          <div>
-            <label for="email" class="mb-1 block text-sm font-medium text-zinc-700">Mail</label>
-            <input id="email" name="email" type="email" required class="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none transition focus:border-emeraldbrand focus:ring-2 focus:ring-emeraldbrand/20" placeholder="nombre@correo.com">
+        <form id="signinForm" class="mt-8 space-y-4" action="#" method="post" autocomplete="on">
+          <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-1">
+            <div class="grid grid-cols-2 gap-1">
+              <button id="signinModePin" type="button" class="rounded-md bg-emeraldbrand px-3 py-2 text-xs font-semibold text-white">Usuario + PIN</button>
+              <button id="signinModeEmail" type="button" class="rounded-md bg-white px-3 py-2 text-xs font-semibold text-zinc-700">Email + contraseña</button>
+            </div>
+            <input id="signinMode" name="signinMode" type="hidden" value="pin">
           </div>
 
-          <div>
-            <label for="password" class="mb-1 block text-sm font-medium text-zinc-700">Contrasena</label>
-            <input id="password" name="password" type="password" minlength="8" required class="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none transition focus:border-emeraldbrand focus:ring-2 focus:ring-emeraldbrand/20" placeholder="Tu contrasena">
+          <div id="signinPinFields" class="space-y-4">
+            <div>
+              <label for="username" class="mb-1 block text-sm font-medium text-zinc-700">Usuario</label>
+              <input id="username" name="username" type="text" autocomplete="username" class="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none transition focus:border-emeraldbrand focus:ring-2 focus:ring-emeraldbrand/20" placeholder="usuario">
+            </div>
+            <div>
+              <label for="pinCode" class="mb-1 block text-sm font-medium text-zinc-700">PIN (4 digitos)</label>
+              <input id="pinCode" name="pinCode" type="password" inputmode="numeric" maxlength="4" autocomplete="one-time-code" class="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none transition focus:border-emeraldbrand focus:ring-2 focus:ring-emeraldbrand/20" placeholder="****">
+            </div>
+          </div>
+
+          <div id="signinEmailFields" class="hidden space-y-4">
+            <div>
+              <label for="email" class="mb-1 block text-sm font-medium text-zinc-700">Mail</label>
+              <input id="email" name="email" type="email" autocomplete="email" class="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none transition focus:border-emeraldbrand focus:ring-2 focus:ring-emeraldbrand/20" placeholder="nombre@correo.com">
+            </div>
+
+            <div>
+              <label for="password" class="mb-1 block text-sm font-medium text-zinc-700">Contraseña</label>
+              <input id="password" name="password" type="password" minlength="6" autocomplete="current-password" class="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none transition focus:border-emeraldbrand focus:ring-2 focus:ring-emeraldbrand/20" placeholder="Tu contrasena">
+            </div>
           </div>
 
           <button type="submit" class="w-full rounded-lg bg-emeraldbrand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-600">
-            Iniciar sesion
+            Iniciar sesión
           </button>
+
+          <p id="signinMessage" class="text-sm text-zinc-600"></p>
         </form>
 
         <p class="mt-5 text-center text-sm text-zinc-600">
@@ -67,4 +90,3 @@
   <script src="../scripts/pages/signin.js"></script>
 </body>
 </html>
-

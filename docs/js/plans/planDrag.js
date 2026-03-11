@@ -41,6 +41,7 @@ function collidesWithOtherTables(grid, movingTable, left, top, tableSize) {
 }
 
 export function startTableDrag(state, event) {
+  if (!state.permissions?.canEditPlans) return;
   const planKey = getPlanKeyByGrid(state, event.currentTarget.parentElement);
   if (isPlanLocked(state, planKey)) return;
 

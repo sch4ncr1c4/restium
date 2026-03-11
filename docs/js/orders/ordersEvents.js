@@ -13,7 +13,7 @@ export function initOrdersEvents(state) {
     if (!state.currentOrderKey) return;
     const pickedWaiter = String(event.target.value || "");
     if (!state.waiters.includes(pickedWaiter)) {
-      state.metaByTable[state.currentOrderKey].waiterName = state.waiters[0] || "Terminal";
+      state.metaByTable[state.currentOrderKey].waiterName = state.waiters[0] || "";
       renderOrderModal(state);
       return;
     }
@@ -21,6 +21,7 @@ export function initOrdersEvents(state) {
   });
 
   document.getElementById("toggleCatalogLockButton").addEventListener("click", () => {
+    if (!state.permissions?.canManageCatalog) return;
     state.catalogLocked = !state.catalogLocked;
     renderCatalogLockUI(state);
     renderCatalog(state);
